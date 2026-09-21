@@ -1,7 +1,7 @@
-//Práctica 5
+//Previo 6
 //Villanueva Figueroa Daniel Kaleb
 //Número de cuenta: 320173985
-//Fecha: 18/09/2026
+//Fecha: 20/09/2026
 
 #include<iostream>
 #include <GL/glew.h>
