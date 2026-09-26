@@ -1,0 +1,11 @@
+newmtl aiStandardSurface10SG
+
+Ns 32.000000
+Ka 0.20 0.12 0.06
+Kd 1.00 1.00 1.00
+Ks 0.05 0.05 0.05
+
+d 1.000000
+illum 2
+
+map_Kd ground_texture.jpg

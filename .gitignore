@@ -75,6 +75,12 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+
+# Conservar modelos 3D Wavefront dentro de cualquier carpeta Models
+!**/Models/*.obj
+!**/Models/**/*.obj
+
+*.iobj
 *.iobj
 *.pch
 *.pdb
