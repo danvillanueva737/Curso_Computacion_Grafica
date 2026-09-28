@@ -78,7 +78,8 @@ int main()
 
     // Set the required callback functions
     glfwSetKeyCallback(window, KeyCallback);
-    //glfwSetCursorPosCallback(window, MouseCallback);
+    
+    glfwSetCursorPosCallback(window, MouseCallback);
 
     // GLFW Options
     glfwSetInputMode( window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
