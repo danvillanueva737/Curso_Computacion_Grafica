@@ -1,8 +1,8 @@
 /*
-Previo 6. Texturizado
+Previo 7. Texturizado
 Autor: Villanueva Figueroa Daniel Kaleb
 Número de cuenta: 320173985
-Fecha: 27/09/2026
+Fecha: 29/09/2026
 */
 
 #include <iostream>
@@ -63,7 +63,7 @@ int main()
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	// Create a GLFWwindow object that we can use for GLFW's functions
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Previo 6. Texturizado. Villanueva Figueroa Daniel Kaleb", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Práctica 7. Dado Texturizado. Villanueva Figueroa Daniel Kaleb", nullptr, nullptr);
 
 	if (nullptr == window)
 	{
@@ -146,33 +146,46 @@ int main()
 	glEnableVertexAttribArray(2);
 	glBindVertexArray(0);
 
-	// Load textures
+
+	// Load texture
 	GLuint texture1;
+
 	glGenTextures(1, &texture1);
-	glBindTexture(GL_TEXTURE_2D,texture1);
-	int textureWidth, textureHeight,nrChannels;
-	stbi_set_flip_vertically_on_load(true);
-	unsigned char *image;
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-	// Diffuse map
-	image = stbi_load("images/window.png", &textureWidth, &textureHeight, &nrChannels,0);
 	glBindTexture(GL_TEXTURE_2D, texture1);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
-	glGenerateMipmap(GL_TEXTURE_2D);
-	if (image)
-	{
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textureWidth, textureHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+
+	// Para esta textura tipo atlas usamos NEAREST
+	// para evitar mezclar los bordes de las diferentes caras.
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	int textureWidth, textureHeight, nrChannels;
+
+	stbi_set_flip_vertically_on_load(true);
+
+	unsigned char* image = stbi_load("images/Dado.png",&textureWidth,&textureHeight,&nrChannels,0);
+
+	if (image){
+		GLenum format;
+		
+		if (nrChannels == 4) 
+			format = GL_RGBA;
+		else
+			format = GL_RGB;
+		glTexImage2D(GL_TEXTURE_2D, 0 ,format, textureWidth, textureHeight, 0,format, GL_UNSIGNED_BYTE, image);
+		
 		glGenerateMipmap(GL_TEXTURE_2D);
+		
+		std::cout << "Textura cargada correctamente" << std::endl;
 	}
-	else
-	{
+
+	else{
 		std::cout << "Failed to load texture" << std::endl;
 	}
-	stbi_image_free(image);
 
+	stbi_image_free(image);
 	
 
 	// Game loop
@@ -192,29 +205,127 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		lampShader.Use();
-		//// Create camera transformations
-		glm::mat4 view;
-		view = camera.GetViewMatrix();
-		glm::mat4 projection = glm::perspective(camera.GetZoom(), (GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT, 0.1f, 100.0f);
-		glm::mat4 model(1);
-		// Get location objects for the matrices on the lamp shader (these could be different on a different shader)
-		// Get the uniform locations
+
+		// Camera transformations
+		glm::mat4 view = camera.GetViewMatrix();
+
+		glm::mat4 projection = glm::perspective(
+			camera.GetZoom(),
+			(GLfloat)SCREEN_WIDTH / (GLfloat)SCREEN_HEIGHT,
+			0.1f,
+			100.0f
+		);
+
+		// Uniform locations
 		GLint modelLoc = glGetUniformLocation(lampShader.Program, "model");
 		GLint viewLoc = glGetUniformLocation(lampShader.Program, "view");
 		GLint projLoc = glGetUniformLocation(lampShader.Program, "projection");
 
-		// Bind diffuse map
+		GLint texOffsetLoc = glGetUniformLocation(
+			lampShader.Program,
+			"texOffset"
+		);
+
+		GLint texScaleLoc = glGetUniformLocation(
+			lampShader.Program,
+			"texScale"
+		);
+
+		// Bind texture
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, texture1);
 
-		// Set matrices
-		glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-		glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-		// Draw the light object (using light's vertex attributes)
+		glUniform1i(
+			glGetUniformLocation(lampShader.Program, "ourTexture"),
+			0
+		);
+
+		// Camera matrices
+		glUniformMatrix4fv(viewLoc,1,GL_FALSE,glm::value_ptr(view));
+		glUniformMatrix4fv(projLoc,1,GL_FALSE,glm::value_ptr(projection));
+		// Cada cara ocupa 1/4 de la textura en X
+		// y 1/4 de la textura en Y
+		glm::vec2 texScale(0.25f, 0.25f);
+		glUniform2fv(texScaleLoc,1,glm::value_ptr(texScale));
 		glBindVertexArray(VAO);
+
+
+		// ========================================
+		// CARA FRONTAL - NUMERO 3
+		// ========================================
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model,glm::vec3(0.0f, 0.0f, 0.5f));
+		glUniformMatrix4fv(modelLoc,1,GL_FALSE,glm::value_ptr(model));
+		glm::vec2 texOffset(0.50f, 0.25f);
+		glUniform2fv(texOffsetLoc,1,glm::value_ptr(texOffset));
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		
+		// ========================================
+		// CARA TRASERA - NUMERO 1
+		// ========================================
+		model = glm::mat4(1.0f);
+		model = glm::translate(model,glm::vec3(0.0f, 0.0f, -0.5f));
+		model = glm::rotate(model,glm::radians(180.0f),glm::vec3(0.0f, 1.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc,1,GL_FALSE,glm::value_ptr(model));
+		texOffset = glm::vec2(0.00f, 0.25f);
+		glUniform2fv(texOffsetLoc,1,glm::value_ptr(texOffset));
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		
+		// ========================================
+		// CARA IZQUIERDA - NUMERO 2
+		// ========================================
+
+		model = glm::mat4(1.0f);
+        model = glm::translate(model,glm::vec3(-0.5f, 0.0f, 0.0f));
+		model = glm::rotate(model,glm::radians(-90.0f),glm::vec3(0.0f, 1.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc,1,GL_FALSE,glm::value_ptr(model));
+		texOffset = glm::vec2(0.25f, 0.25f);
+		glUniform2fv(texOffsetLoc,1,glm::value_ptr(texOffset));
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		
+		// ========================================
+		// CARA DERECHA - NUMERO 4
+		// ========================================
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model,glm::vec3(0.5f, 0.0f, 0.0f));
+		model = glm::rotate(model,glm::radians(90.0f),glm::vec3(0.0f, 1.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc,1,GL_FALSE,glm::value_ptr(model));
+		texOffset = glm::vec2(0.75f, 0.25f);
+		glUniform2fv(texOffsetLoc,1,glm::value_ptr(texOffset));
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	
+		// ========================================
+		// CARA SUPERIOR - NUMERO 6
+		// ========================================
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model,glm::vec3(0.0f, 0.5f, 0.0f));
+		model = glm::rotate(model,glm::radians(-90.0f),glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc,1,GL_FALSE,glm::value_ptr(model));
+		texOffset = glm::vec2(0.50f, 0.50f);
+		glUniform2fv(texOffsetLoc,1,glm::value_ptr(texOffset));
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+		
+		// ========================================
+		// CARA INFERIOR - NUMERO 5
+		// ========================================
+
+		model = glm::mat4(1.0f);
+		model = glm::translate(model,glm::vec3(0.0f, -0.5f, 0.0f));
+		model = glm::rotate(model,glm::radians(90.0f),glm::vec3(1.0f, 0.0f, 0.0f));
+		glUniformMatrix4fv(modelLoc,1,GL_FALSE,glm::value_ptr(model));
+		texOffset = glm::vec2(0.50f, 0.00f);
+		glUniform2fv(texOffsetLoc,1,glm::value_ptr(texOffset));
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		
 		glBindVertexArray(0);
+
 
 		// Swap the screen buffers
 		glfwSwapBuffers(window);
