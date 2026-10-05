@@ -15,6 +15,8 @@ struct Light
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
+
+    float intensity;
 };
 
 in vec3 FragPos;
@@ -24,26 +26,37 @@ in vec2 TexCoords;
 out vec4 color;
 
 uniform vec3 viewPos;
+
 uniform Material material;
-uniform Light light;
+
+uniform Light sunLight;
+uniform Light moonLight;
 
 uniform sampler2D texture_diffuse1;
 
-void main()
+
+// ======================================
+// CÁLCULO DE UNA FUENTE DE LUZ
+// ======================================
+
+vec3 CalculateLight(
+    Light light,
+    vec3 norm,
+    vec3 viewDir
+)
 {
-    // Ambient
+    // Ambiental
     vec3 ambient =
         light.ambient *
         material.ambient;
 
-    // Diffuse
-    vec3 norm = normalize(Normal);
-
+    // Dirección de la luz
     vec3 lightDir =
         normalize(
             light.position - FragPos
         );
 
+    // Difusa
     float diff =
         max(
             dot(norm, lightDir),
@@ -55,12 +68,7 @@ void main()
         diff *
         material.diffuse;
 
-    // Specular
-    vec3 viewDir =
-        normalize(
-            viewPos - FragPos
-        );
-
+    // Especular
     vec3 reflectDir =
         reflect(
             -lightDir,
@@ -70,10 +78,7 @@ void main()
     float spec =
         pow(
             max(
-                dot(
-                    viewDir,
-                    reflectDir
-                ),
+                dot(viewDir, reflectDir),
                 0.0
             ),
             material.shininess
@@ -84,15 +89,52 @@ void main()
         spec *
         material.specular;
 
-    vec3 result =
+    // Intensidad según altura de la fuente
+    return (
         ambient +
         diffuse +
-        specular;
+        specular
+    ) * light.intensity;
+}
 
-    color =
-        vec4(result, 1.0f) *
+
+void main()
+{
+    vec3 norm =
+        normalize(Normal);
+
+    vec3 viewDir =
+        normalize(
+            viewPos - FragPos
+        );
+
+    // Aporte del Sol
+    vec3 sunResult =
+        CalculateLight(
+            sunLight,
+            norm,
+            viewDir
+        );
+
+    // Aporte de la Luna
+    vec3 moonResult =
+        CalculateLight(
+            moonLight,
+            norm,
+            viewDir
+        );
+
+    vec3 result =
+        sunResult +
+        moonResult;
+
+    vec4 textureColor =
         texture(
             texture_diffuse1,
             TexCoords
         );
+
+    color =
+        vec4(result, 1.0f) *
+        textureColor;
 }
