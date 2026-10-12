@@ -568,34 +568,12 @@ int main()
         // ======================================
 
         glm::mat4 sunModelMat = glm::mat4(1.0f);
-
-        sunModelMat = glm::translate(
-            sunModelMat,
-            sunPos
-        );
-
-        sunModelMat = glm::scale(
-            sunModelMat,
-            glm::vec3(0.45f)
-        );
-
-        glUniformMatrix4fv(
-            glGetUniformLocation(lightModelShader.Program, "model"),
-            1,
-            GL_FALSE,
-            glm::value_ptr(sunModelMat)
-        );
-
+        sunModelMat = glm::translate(sunModelMat,sunPos);
+        sunModelMat = glm::scale(sunModelMat,glm::vec3(0.45f));
+        glUniformMatrix4fv(glGetUniformLocation(lightModelShader.Program, "model"),1,GL_FALSE,glm::value_ptr(sunModelMat));
         // Naranja brillante
-        glUniform3f(
-            glGetUniformLocation(lightModelShader.Program, "lightColor"),
-            1.0f,
-            0.65f,
-            0.10f
-        );
-
+        glUniform3f(glGetUniformLocation(lightModelShader.Program, "lightColor"),1.0f,0.65f,0.10f);
         celestialBody.Draw(lightModelShader);
-
 
 
         // ======================================
@@ -603,32 +581,11 @@ int main()
         // ======================================
 
         glm::mat4 moonModelMat = glm::mat4(1.0f);
-
-        moonModelMat = glm::translate(
-            moonModelMat,
-            moonPos
-        );
-
-        moonModelMat = glm::scale(
-            moonModelMat,
-            glm::vec3(0.30f)
-        );
-
-        glUniformMatrix4fv(
-            glGetUniformLocation(lightModelShader.Program, "model"),
-            1,
-            GL_FALSE,
-            glm::value_ptr(moonModelMat)
-        );
-
+        moonModelMat = glm::translate(moonModelMat,moonPos);
+        moonModelMat = glm::scale(moonModelMat,glm::vec3(0.30f));
+        glUniformMatrix4fv(glGetUniformLocation(lightModelShader.Program, "model"),1,GL_FALSE,glm::value_ptr(moonModelMat));
         // Azul frío
-        glUniform3f(
-            glGetUniformLocation(lightModelShader.Program, "lightColor"),
-            0.55f,
-            0.75f,
-            1.0f
-        );
-
+        glUniform3f(glGetUniformLocation(lightModelShader.Program, "lightColor"),0.55f,0.75f,1.0f);
         celestialBody.Draw(lightModelShader);
 
 
@@ -665,16 +622,12 @@ void DoMovement()
 
     if (keys[GLFW_KEY_O])
     {
-        orbitAngle +=
-            orbitControlSpeed *
-            deltaTime;
+        orbitAngle += orbitControlSpeed * deltaTime;
     }
 
     if (keys[GLFW_KEY_L])
     {
-        orbitAngle -=
-            orbitControlSpeed *
-            deltaTime;
+        orbitAngle -= orbitControlSpeed * deltaTime;
     }
 
 
