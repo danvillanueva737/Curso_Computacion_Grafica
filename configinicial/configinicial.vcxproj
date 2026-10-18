@@ -23,7 +23,7 @@
     <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="fuentesDeLuz.cpp" />
+    <ClCompile Include="Animación_Básica.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\core.frag" />
