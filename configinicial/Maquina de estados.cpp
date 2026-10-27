@@ -1,7 +1,7 @@
-// Previo 11. Máquina de Estados.
+// Práctica 11. Máquina de Estados.
 // Autor: Villanueva Figueroa Daniel Kaleb
 // Número de cuenta: 320173985
-// Fecha: 25/10/2026
+// Fecha: 26/10/2026
 
 
 #include <iostream>
@@ -105,20 +105,55 @@ float vertices[] = {
 
 
 glm::vec3 Light1 = glm::vec3(0);
-//Anim
+
+// Animacion de pelota
 float rotBall = 0.0f;
 bool AnimBall = false;
-bool AnimDog = false;
-float rotDog = 0.0f;
-int dogAnim = 0;
+
+// Articulaciones del perrito
 float FLegs = 0.0f;
 float RLegs = 0.0f;
 float head = 0.0f;
 float tail = 0.0f;
-glm::vec3 dogPos (0.0f,0.0f,0.0f);
-float dogRot = 0.0f;
-bool step = false;
 
+// Posicion y rotacion del perrito
+glm::vec3 dogPos(0.0f, 0.0f, 0.0f);
+float dogRot = 0.0f;
+
+// Estados de la animacion
+enum EstadoPerro {
+	DETENIDO,
+	CAMINANDO,
+	GIRANDO,
+	FINALIZADO
+};
+
+EstadoPerro estadoPerro = DETENIDO;
+
+// Control del recorrido
+int destinoActual = 0;
+float faseCaminata = 0.0f;
+
+// Velocidades
+const float VELOCIDAD_CAMINATA = 0.65f;
+const float VELOCIDAD_GIRO = 85.0f;
+
+// Coordenadas de los puntos A, B, C, D y E
+const glm::vec3 ruta[5] = {
+	glm::vec3(0.0f, 0.0f, 2.35f),     // A
+	glm::vec3(2.35f, 0.0f, 2.35f),    // B
+	glm::vec3(2.35f, 0.0f, -2.35f),   // C
+	glm::vec3(-2.35f, 0.0f, -2.35f),  // D
+	glm::vec3(0.0f, 0.0f, 0.0f)       // E (centro)
+};
+
+// Angulos acumulados para girar siempre al mismo lado
+const float angulosGiro[4] = {
+	90.0f,    // En A, hacia B
+	180.0f,   // En B, hacia C
+	270.0f,   // En C, hacia D
+	405.0f    // En D, hacia E
+};
 
 
 // Deltatime
@@ -137,7 +172,7 @@ int main()
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);*/
 
 	// Create a GLFWwindow object that we can use for GLFW's functions
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Previo 11. Animacion maquina de estados. Daniel Villanueva.", nullptr, nullptr);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Práctica 11. Daniel Villanueva.", nullptr, nullptr);
 
 	if (nullptr == window)
 	{
@@ -505,62 +540,139 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode
 		AnimBall = !AnimBall;
 		
 	}
-	if (keys[GLFW_KEY_B])
-	{
-		dogAnim = 1;
 
+	if (key == GLFW_KEY_B && action == GLFW_PRESS)
+	{
+		// Reiniciar posicion y rotacion
+		dogPos = glm::vec3(0.0f);
+		dogRot = 0.0f;
+
+		// Reiniciar recorrido
+		destinoActual = 0;
+		faseCaminata = 0.0f;
+
+		// Reiniciar articulaciones
+		FLegs = 0.0f;
+		RLegs = 0.0f;
+		head = 0.0f;
+		tail = 0.0f;
+
+		// Comenzar caminata
+		estadoPerro = CAMINANDO;
 	}
+
 }
-void Animation() {
+
+void Animation()
+{
+	// Tiempo transcurrido entre frames
+	float dt = deltaTime;
+
+	// Evitar saltos grandes si el programa se pausa
+	if (dt > 0.05f)
+		dt = 0.05f;
+
+	// Animacion de pelota
 	if (AnimBall)
 	{
-		rotBall -= 0.6f;
-		//printf("%f", rotBall);
+		rotBall -= 36.0f * dt;
 	}
-	
-	if (AnimDog)
-	{
-		rotDog -= 0.6f;
-		//printf("%f", rotBall);
-	}
-	if (dogAnim == 1) {			//Walk animation
-		if (!step) {			//State 1
-			RLegs += 0.03f;
-			FLegs += 0.03f;
-			head += 0.03f;
-			tail += 0.03f;
 
-			if (RLegs > 15.0f) // Condition
-				step = true;
+	// ESTADO 1: CAMINANDO
+	if (estadoPerro == CAMINANDO)
+	{
+		// Calcular direccion hacia el destino
+		glm::vec3 direccion = ruta[destinoActual] - dogPos;
+
+		float distancia = glm::length(direccion);
+		float desplazamiento = VELOCIDAD_CAMINATA * dt;
+
+		// Comprobar si llego a su destino
+		if (distancia <= desplazamiento)
+		{
+			// Fijar posicion exacta
+			dogPos = ruta[destinoActual];
+
+			// Si llego al punto E, finalizar
+			if (destinoActual == 4)
+			{
+				estadoPerro = FINALIZADO;
+			}
+			else
+			{
+				// Iniciar rotacion
+				estadoPerro = GIRANDO;
+			}
 		}
 		else
 		{
-			RLegs -= 0.03f;
-			FLegs -= 0.03f;
-			head -= 0.03f;
-			tail -= 0.03f;
-			if (RLegs < -15.0f)
-				step = false;
-		}
-		
-		dogPos.z += 0.001f;
+			// Normalizar direccion y avanzar
+			direccion = glm::normalize(direccion);
 
-		const float limiteZ = 2.35f; // Valor de prueba
-
-		if (dogPos.z >= limiteZ)
-		{
-			dogPos.z = limiteZ;
-			dogAnim = 0;
-
-			FLegs = 0.0f;
-			RLegs = 0.0f;
-			head = 0.0f;
-			tail = 0.0f;
+			dogPos += direccion * desplazamiento;
 		}
 	}
-	
-	
+
+	// ESTADO 2: GIRANDO
+	else if (estadoPerro == GIRANDO)
+	{
+		// Angulo objetivo del giro actual
+		float anguloObjetivo = angulosGiro[destinoActual];
+
+		// Rotacion progresiva
+		dogRot += VELOCIDAD_GIRO * dt;
+
+		// Comprobar si termino de girar
+		if (dogRot >= anguloObjetivo)
+		{
+			dogRot = anguloObjetivo;
+
+			// Pasar al siguiente destino
+			destinoActual++;
+
+			// Continuar caminando
+			estadoPerro = CAMINANDO;
+		}
+	}
+
+
+	// ANIMACION DE ARTICULACIONES
+	if (estadoPerro == CAMINANDO)
+	{
+		// Movimiento normal de caminata
+		faseCaminata += 8.0f * dt;
+
+		// Movimiento de las patas
+		FLegs = 18.0f * sin(faseCaminata);
+		RLegs = 18.0f * sin(faseCaminata);
+
+		// Movimiento de cabeza y cola
+		head = 4.0f * sin(faseCaminata * 2.0f);
+		tail = 9.0f * sin(faseCaminata * 1.2f);
+	}
+	else if (estadoPerro == GIRANDO)
+	{
+		// Movimiento suave durante la rotacion
+		faseCaminata += 8.0f * dt;
+
+		// Pequenos pasos mientras gira
+		FLegs = 14.0f * sin(faseCaminata);
+		RLegs = 14.0f * sin(faseCaminata);
+
+		// Balanceo ligero de cabeza y cola
+		head = 3.0f * sin(faseCaminata * 2.0f);
+		tail = 7.0f * sin(faseCaminata * 1.2f);
+	}
+	else
+	{
+		// Posicion de reposo
+		FLegs = 0.0f;
+		RLegs = 0.0f;
+		head = 0.0f;
+		tail = 0.0f;
+	}
 }
+
 
 void MouseCallback(GLFWwindow *window, double xPos, double yPos)
 {
